@@ -1,5 +1,157 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- BPMN se completará en Commit 4 -->
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    targetNamespace="http://smartgob.tech2go.ec/gestion-proyectos">
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="http://smartgob.tech2go.ec/gestion-proyectos"
+             id="tareaLifecycleDefinitions">
+
+  <process id="tareaLifecycle" name="Ciclo de Vida de Tarea" isExecutable="true">
+
+    <!-- ═══════════════════════════════════════════════════════
+         VARIABLES DEL PROCESO:
+           tareaId        (UUID)   — ID de la tarea
+           contratoId     (UUID)   — ID del contrato
+           equipoId       (UUID)   — ID del equipo
+           asignadoAId    (UUID)   — ID del colaborador asignado
+           creadoPorId    (UUID)   — ID de quien creó la tarea
+           estadoActual   (String) — estado actual (ASG,EJE,SUS,TER,TERT,REV,FIN)
+           prioridad      (String) — CRITICA | ALTA | MEDIA | BAJA
+           dentroDePlazo  (boolean)— si la tarea finalizó dentro del plazo
+         ═══════════════════════════════════════════════════════ -->
+
+    <!-- ────────────────── INICIO ────────────────── -->
+    <startEvent id="start" name="Tarea Creada">
+      <extensionElements>
+        <activiti:executionListener event="start"
+            delegateExpression="${tareaIniciadaListener}" />
+      </extensionElements>
+    </startEvent>
+
+    <!-- ────────────────── ASG: ASIGNADO ────────────────── -->
+    <userTask id="taskAsignado" name="Tarea Asignada"
+              activiti:candidateGroups="DEV,DOC,TST">
+      <extensionElements>
+        <activiti:taskListener event="create"
+            delegateExpression="${asignacionTaskListener}" />
+      </extensionElements>
+    </userTask>
+
+    <sequenceFlow id="flow_start_asg" sourceRef="start" targetRef="taskAsignado" />
+
+    <!-- Gateway: desde ASG el usuario puede Iniciar Ejecución -->
+    <exclusiveGateway id="gw_desde_asg" name="Decisión desde Asignado" />
+    <sequenceFlow id="flow_asg_gw" sourceRef="taskAsignado" targetRef="gw_desde_asg" />
+
+    <!-- ────────────────── EJE: EJECUTANDO ────────────────── -->
+    <serviceTask id="stIniciarEjecucion" name="Iniciar Ejecución"
+                 activiti:delegateExpression="${iniciarEjecucionDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_gw_eje" sourceRef="gw_desde_asg" targetRef="stIniciarEjecucion">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${accion == 'INICIAR'}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="taskEjecutando" name="Tarea en Ejecución"
+              activiti:assignee="${asignadoAId}">
+      <extensionElements>
+        <activiti:taskListener event="complete"
+            delegateExpression="${ejecucionCompletaListener}" />
+      </extensionElements>
+    </userTask>
+
+    <sequenceFlow id="flow_st_eje" sourceRef="stIniciarEjecucion" targetRef="taskEjecutando" />
+
+    <!-- Gateway: desde EJE puede Terminar o Suspender -->
+    <exclusiveGateway id="gw_desde_eje" name="Decisión desde Ejecutando" />
+    <sequenceFlow id="flow_eje_gw" sourceRef="taskEjecutando" targetRef="gw_desde_eje" />
+
+    <!-- ────────────────── SUS: SUSPENDIDO ────────────────── -->
+    <serviceTask id="stSuspender" name="Suspender Tarea"
+                 activiti:delegateExpression="${suspenderTareaDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_gw_sus" sourceRef="gw_desde_eje" targetRef="stSuspender">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${accion == 'SUSPENDER'}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="taskSuspendido" name="Tarea Suspendida"
+              activiti:candidateGroups="LDR,ADM">
+    </userTask>
+
+    <sequenceFlow id="flow_st_sus" sourceRef="stSuspender" targetRef="taskSuspendido" />
+
+    <!-- Reanudar: SUS → vuelve a EJE -->
+    <serviceTask id="stReanudar" name="Reanudar Tarea"
+                 activiti:delegateExpression="${reanudarTareaDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_sus_reanudar" sourceRef="taskSuspendido" targetRef="stReanudar" />
+    <sequenceFlow id="flow_reanudar_eje" sourceRef="stReanudar" targetRef="taskEjecutando" />
+
+    <!-- ────────────────── TER/TERT: TERMINADO ────────────────── -->
+    <serviceTask id="stTerminar" name="Terminar Tarea"
+                 activiti:delegateExpression="${terminarTareaDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_gw_ter" sourceRef="gw_desde_eje" targetRef="stTerminar">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${accion == 'TERMINAR'}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- ────────────────── REV: EN REVISIÓN ────────────────── -->
+    <userTask id="taskRevision" name="Revisión por Tester"
+              activiti:candidateGroups="TST">
+      <extensionElements>
+        <activiti:taskListener event="create"
+            delegateExpression="${revisionCreadaListener}" />
+      </extensionElements>
+    </userTask>
+
+    <sequenceFlow id="flow_ter_rev" sourceRef="stTerminar" targetRef="taskRevision" />
+
+    <!-- Gateway: desde REV puede Aprobar (FIN) o Devolver (ASG) -->
+    <exclusiveGateway id="gw_desde_rev" name="Decisión de Revisión" />
+    <sequenceFlow id="flow_rev_gw" sourceRef="taskRevision" targetRef="gw_desde_rev" />
+
+    <!-- ────────────────── FIN: FINALIZADA ────────────────── -->
+    <serviceTask id="stFinalizar" name="Finalizar Tarea"
+                 activiti:delegateExpression="${finalizarTareaDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_gw_fin" sourceRef="gw_desde_rev" targetRef="stFinalizar">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${accion == 'APROBAR'}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <endEvent id="end" name="Tarea Finalizada">
+      <extensionElements>
+        <activiti:executionListener event="end"
+            delegateExpression="${tareaFinalizadaListener}" />
+      </extensionElements>
+    </endEvent>
+
+    <sequenceFlow id="flow_fin_end" sourceRef="stFinalizar" targetRef="end" />
+
+    <!-- ────────────────── DEVOLVER: REV → ASG ────────────────── -->
+    <serviceTask id="stDevolver" name="Devolver Tarea"
+                 activiti:delegateExpression="${devolverTareaDelegate}">
+    </serviceTask>
+
+    <sequenceFlow id="flow_gw_devolver" sourceRef="gw_desde_rev" targetRef="stDevolver">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${accion == 'DEVOLVER'}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- Vuelve a Asignado -->
+    <sequenceFlow id="flow_devolver_asg" sourceRef="stDevolver" targetRef="taskAsignado" />
+
+  </process>
+
 </definitions>

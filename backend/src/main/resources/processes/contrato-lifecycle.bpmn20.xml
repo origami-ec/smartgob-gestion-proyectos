@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="http://smartgob.tech2go.ec/gestion-proyectos"
+             id="contratoLifecycleDefinitions">
+
+  <process id="contratoLifecycle" name="Ciclo de Vida de Contrato" isExecutable="true">
+
+    <!-- Variables: contratoId, nroContrato, administradorId, estado -->
+
+    <startEvent id="start" name="Contrato Registrado" />
+
+    <userTask id="taskPlanificacion" name="Planificación"
+              activiti:assignee="${administradorId}">
+    </userTask>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="taskPlanificacion" />
+
+    <exclusiveGateway id="gw1" />
+    <sequenceFlow id="f2" sourceRef="taskPlanificacion" targetRef="gw1" />
+
+    <userTask id="taskEjecucion" name="En Ejecución"
+              activiti:assignee="${administradorId}">
+    </userTask>
+    <sequenceFlow id="f3" sourceRef="gw1" targetRef="taskEjecucion">
+      <conditionExpression xsi:type="tFormalExpression">${fase == 'EJECUCION'}</conditionExpression>
+    </sequenceFlow>
+
+    <exclusiveGateway id="gw2" />
+    <sequenceFlow id="f4" sourceRef="taskEjecucion" targetRef="gw2" />
+
+    <userTask id="taskCierre" name="Cierre"
+              activiti:assignee="${administradorId}">
+    </userTask>
+    <sequenceFlow id="f5" sourceRef="gw2" targetRef="taskCierre">
+      <conditionExpression xsi:type="tFormalExpression">${fase == 'CIERRE'}</conditionExpression>
+    </sequenceFlow>
+
+    <endEvent id="end" name="Contrato Cerrado" />
+    <sequenceFlow id="f6" sourceRef="taskCierre" targetRef="end" />
+
+    <!-- Suspender desde ejecución -->
+    <userTask id="taskSuspendido" name="Contrato Suspendido"
+              activiti:candidateGroups="LDR,ADM">
+    </userTask>
+    <sequenceFlow id="f7" sourceRef="gw2" targetRef="taskSuspendido">
+      <conditionExpression xsi:type="tFormalExpression">${fase == 'SUSPENDIDO'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f8" sourceRef="taskSuspendido" targetRef="taskEjecucion" />
+
+  </process>
+
+</definitions>
