@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "SmartGob - Gestión de Proyectos",
+    "description": "Colección completa de endpoints API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost" },
+    { "key": "token", "value": "" },
+    { "key": "contrato_id", "value": "" },
+    { "key": "equipo_id", "value": "" },
+    { "key": "tarea_id", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var json = pm.response.json();",
+            "if (json.data && json.data.token) {",
+            "  pm.collectionVariables.set('token', json.data.token);",
+            "  pm.collectionVariables.set('colaborador_id', json.data.colaboradorId);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"usuario\":\"0900000001\",\"password\":\"Admin2026!\"}" }
+          }
+        },
+        {
+          "name": "Me",
+          "request": { "method": "GET", "url": "{{base_url}}/api/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Empresas",
+      "item": [
+        { "name": "Listar activas", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/empresas/activas" } },
+        {
+          "name": "Crear empresa",
+          "request": {
+            "method": "POST", "url": "{{base_url}}/api/v1/gestion-proyectos/empresas",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"ruc\":\"0990888001001\",\"razonSocial\":\"Empresa Postman\",\"tipo\":\"CONTRATISTA\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contratos",
+      "item": [
+        { "name": "Listar activos", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/contratos/activos" } },
+        { "name": "Mis contratos", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/contratos/mis-contratos" } }
+      ]
+    },
+    {
+      "name": "Equipos",
+      "item": [
+        { "name": "Por contrato", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/equipos/contrato/{{contrato_id}}" } },
+        { "name": "Mis equipos", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/equipos/mis-equipos" } }
+      ]
+    },
+    {
+      "name": "Tareas",
+      "item": [
+        { "name": "Buscar", "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/v1/gestion-proyectos/tareas?page=0&size=20", "query": [{"key":"page","value":"0"},{"key":"size","value":"20"}] } } },
+        { "name": "Mis tareas", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas/mis-tareas" } },
+        { "name": "Kanban", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas/kanban/{{equipo_id}}" } },
+        { "name": "Detalle", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas/{{tarea_id}}" } },
+        { "name": "Transiciones", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas/{{tarea_id}}/transiciones" } },
+        {
+          "name": "Crear tarea",
+          "request": {
+            "method": "POST", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"contratoId\":\"{{contrato_id}}\",\"equipoId\":\"{{equipo_id}}\",\"categoria\":\"DESARROLLO\",\"titulo\":\"Tarea desde Postman\",\"prioridad\":\"MEDIA\",\"fechaEstimadaFin\":\"2026-06-30\"}" }
+          }
+        },
+        {
+          "name": "Cambiar estado",
+          "request": {
+            "method": "PATCH", "url": "{{base_url}}/api/v1/gestion-proyectos/tareas/{{tarea_id}}/estado",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"estadoDestino\":\"EJE\",\"comentario\":\"Desde Postman\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        { "name": "Super", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/dashboard/super" } },
+        { "name": "Equipo", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/dashboard/equipo" } },
+        { "name": "Alertas SLA", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/dashboard/alertas-sla" } }
+      ]
+    },
+    {
+      "name": "Notificaciones",
+      "item": [
+        { "name": "No leídas", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/notificaciones/no-leidas" } },
+        { "name": "Count", "request": { "method": "GET", "url": "{{base_url}}/api/v1/gestion-proyectos/notificaciones/no-leidas/count" } }
+      ]
+    }
+  ]
+}

@@ -10,4 +10,5 @@ public class Empresa extends BaseEntity {
     @Column(name = "razon_social", nullable = false, length = 200) private String razonSocial;
     @Column(length = 20) private String tipo = "PRIVADA";
     @Column(length = 10) private String estado = "ACTIVO";
+    public Empresa(java.util.UUID id) { this.setId(id); }
 }

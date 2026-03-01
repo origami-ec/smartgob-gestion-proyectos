@@ -18,4 +18,5 @@ public class Mensaje {
     @Column(length = 20) private String tipo = "DIRECTO";
     private Boolean leido = false;
     @Column(name = "created_at", nullable = false) private OffsetDateTime createdAt = OffsetDateTime.now();
+    public Mensaje(java.util.UUID id) { this.setId(id); }
 }

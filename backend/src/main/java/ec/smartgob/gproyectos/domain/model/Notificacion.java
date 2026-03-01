@@ -18,4 +18,5 @@ public class Notificacion {
     private Boolean leido = false;
     @Column(name = "url_accion", length = 500) private String urlAccion;
     @Column(name = "created_at", nullable = false) private OffsetDateTime createdAt = OffsetDateTime.now();
+    public Notificacion(java.util.UUID id) { this.setId(id); }
 }

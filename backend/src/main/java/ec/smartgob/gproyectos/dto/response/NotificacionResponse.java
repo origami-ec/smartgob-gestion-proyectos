@@ -1,10 +1,11 @@
 package ec.smartgob.gproyectos.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Data
+@Data @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NotificacionResponse {
     private UUID id;
     private String tipo;
