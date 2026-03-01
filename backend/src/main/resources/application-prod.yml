@@ -1,6 +1,47 @@
+# ═══════════════════════════════════════════════════════════
+# Perfil: PRODUCCIÓN
+# ═══════════════════════════════════════════════════════════
+server:
+  port: 8081
+  tomcat:
+    max-threads: 200
+    accept-count: 100
+
 spring:
-  jpa.show-sql: false
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 600000
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+        format_sql: false
+
 logging:
   level:
     root: WARN
-    ec.smartgob.gproyectos: INFO
+    ec.smartgob: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.activiti: WARN
+  file:
+    name: /app/logs/smartgob-gproyectos.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+
+app:
+  uploads:
+    path: ${UPLOADS_PATH:/app/uploads}
+    max-size-mb: ${UPLOADS_MAX_SIZE_MB:10}
+  sla:
+    dias-alerta: ${SLA_DIAS_ALERTA:3}
+    horas-revision: ${SLA_HORAS_REVISION:48}
+  notificaciones:
+    dias-retener: ${NOTIFICACIONES_DIAS_RETENER:30}

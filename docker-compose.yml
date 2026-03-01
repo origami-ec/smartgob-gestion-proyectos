@@ -1,56 +1,104 @@
 version: '3.9'
+
 services:
+  # ── PostgreSQL ──────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: smartgob-gproyectos-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-smartgob_gproyectos}
       POSTGRES_USER: ${DB_USER:-smartgob}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-SmartG0b2026!}
+      TZ: ${APP_TIMEZONE:-America/Guayaquil}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-smartgob}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-smartgob} -d ${DB_NAME:-smartgob_gproyectos}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - smartgob-net
 
+  # ── Backend Spring Boot ─────────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: smartgob-gproyectos-api
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-smartgob_gproyectos}
       DB_USER: ${DB_USER:-smartgob}
       DB_PASSWORD: ${DB_PASSWORD:-SmartG0b2026!}
       JWT_SECRET: ${JWT_SECRET:-cH4nG3tH1sS3cr3tK3y!SmartGob2026MustBe256BitsLong!!}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-900000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-86400000}
       APP_TIMEZONE: ${APP_TIMEZONE:-America/Guayaquil}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-    ports:
-      - "${API_PORT:-8081}:8081"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost}
+      SLA_DIAS_ALERTA: ${SLA_DIAS_ALERTA:-3}
+      SLA_HORAS_REVISION: ${SLA_HORAS_REVISION:-48}
+      NOTIFICACIONES_DIAS_RETENER: ${NOTIFICACIONES_DIAS_RETENER:-30}
+      UPLOADS_PATH: ${UPLOADS_PATH:-/app/uploads}
+      UPLOADS_MAX_SIZE_MB: ${UPLOADS_MAX_SIZE_MB:-10}
+    volumes:
+      - uploads:/app/uploads
+      - backend-logs:/app/logs
     depends_on:
-      postgres: { condition: service_healthy }
+      postgres:
+        condition: service_healthy
     networks:
       - smartgob-net
 
+  # ── Frontend React (build estático) ─────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: smartgob-gproyectos-ui
-    ports:
-      - "${UI_PORT:-3000}:80"
-    depends_on:
-      - backend
+    restart: unless-stopped
     networks:
       - smartgob-net
+
+  # ── Nginx Reverse Proxy ─────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: smartgob-gproyectos-proxy
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - smartgob-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   pgdata:
+    name: smartgob-gproyectos-pgdata
+  uploads:
+    name: smartgob-gproyectos-uploads
+  backend-logs:
+    name: smartgob-gproyectos-logs
+  nginx-logs:
+    name: smartgob-gproyectos-nginx-logs
+
 networks:
   smartgob-net:
+    name: smartgob-gproyectos-network
     driver: bridge

@@ -1,25 +1,40 @@
-# Java/Maven
-backend/target/
-*.class
-*.jar
-*.war
-*.log
-.mvn/wrapper/maven-wrapper.jar
-
-# Node/React
-frontend/node_modules/
-frontend/dist/
-frontend/.env.local
-
-# IDE
+# ── IDE ───────────────────────────────────────────────────
 .idea/
 *.iml
 .vscode/
 *.swp
+*.swo
 .DS_Store
 
-# Docker
-*.env.local
+# ── Java / Maven ──────────────────────────────────────────
+backend/target/
+*.class
+*.jar
+*.war
 
-# Uploads
+# ── Node ──────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Environment ───────────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Docker ────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Uploads / Logs ────────────────────────────────────────
 uploads/
+logs/
+*.log
+
+# ── Backups ───────────────────────────────────────────────
+backup_*.sql
+*.dump
+
+# ── SSL certs ─────────────────────────────────────────────
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt

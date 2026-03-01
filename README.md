@@ -1,59 +1,96 @@
 # SmartGob — Gestión de Proyectos
 
-Módulo empresarial de Gestión de Proyectos, Equipos y Tareas integrado al ecosistema SmartGob.
+Sistema integral de gestión de proyectos para gobiernos municipales del Ecuador.
 
 ## Stack Tecnológico
 
 | Capa | Tecnología |
 |------|-----------|
-| **Backend** | Java 21, Spring Boot 3.4.3, Activiti 6 BPM |
-| **Base de Datos** | PostgreSQL 16 |
-| **Frontend** | React 19, TypeScript, TanStack Query, Tailwind CSS |
-| **Seguridad** | JWT/OAuth2, RBAC |
-| **DevOps** | Docker Compose, Flyway, Actuator/Prometheus |
-
-## Arquitectura
-```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  React SPA  │────▶│  Spring Boot API │────▶│  PostgreSQL  │
-│  (Port 3000)│◀────│  + Activiti BPM  │◀────│  (Port 5432) │
-└─────────────┘     │  (Port 8081)     │     └──────────────┘
-                    └──────────────────┘
-```
+| **Backend** | Spring Boot 3.4.3, Java 21, JPA/Hibernate, Flyway, Activiti BPM 6, MapStruct |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Zustand, Recharts |
+| **Base de datos** | PostgreSQL 16 |
+| **Infraestructura** | Docker, nginx reverse proxy |
 
 ## Inicio Rápido
 
+### Producción (Docker)
+
 ```bash
-# Levantar infraestructura
-docker-compose up -d
+# Clonar y configurar
+cp .env.example .env
+# Editar .env con valores de producción
 
-# Backend (desarrollo)
-cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+# Desplegar
+./scripts/deploy.sh up
 
-# Frontend (desarrollo)
-cd frontend && npm install && npm run dev
+# Acceder: http://localhost
 ```
 
-## Endpoints
-- API: http://localhost:8081/api/v1/gestion-proyectos
-- Swagger: http://localhost:8081/swagger-ui.html
-- Frontend: http://localhost:3000
+### Desarrollo Local
 
-## Roles
-| Rol | Código | Permisos |
-|-----|--------|----------|
-| Súper Usuario | SU | Control total |
-| Líder | LDR | Gestión equipo, asignar/suspender tareas |
-| Administrador | ADM | Igual que Líder en su equipo |
-| Desarrollador | DEV | Ejecutar tareas asignadas |
-| Tester | TST | Revisar y aprobar/devolver tareas |
-| Documentador | DOC | Ejecutar tareas de documentación |
+```bash
+# 1. Levantar PostgreSQL
+./scripts/init-dev.sh
 
-## Flujo de Tareas (BPM)
-```
-ASG → EJE → TER/TER-T → REV → FIN
-       ↕                       │
-      SUS        (devuelto) ◄──┘
+# 2. Backend (terminal 1)
+cd backend
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 3. Frontend (terminal 2)
+cd frontend
+npm run dev
+
+# Acceder: http://localhost:3000
 ```
 
-© TECH2GO S.A. 2026
+## Arquitectura
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│   nginx:80  │────▶│ frontend:80  │     │ postgres:5432│
+│  (proxy)    │     │  (React SPA) │     │  (PostgreSQL)│
+│             │────▶│ backend:8081 │────▶│              │
+└─────────────┘     │ (Spring Boot)│     └──────────────┘
+                    └──────────────┘
+```
+
+## Módulos
+
+- **Gestión de Contratos**: registro, plazos, administradores
+- **Equipos de Trabajo**: asignación de miembros con roles (LDR, ADM, DEV, TST, DOC)
+- **Tareas con Flujo BPM**: ASG → EJE → TER/TERT → REV → FIN
+- **Tablero Kanban**: vista drag-and-drop por equipo
+- **Dashboard**: KPIs, gráficos, alertas SLA
+- **Notificaciones**: automáticas por cambios de estado
+- **Mensajería**: directa, por equipo, por contrato
+
+## Scripts
+
+| Comando | Descripción |
+|---------|-------------|
+| `./scripts/deploy.sh up` | Levantar todos los servicios |
+| `./scripts/deploy.sh down` | Detener servicios |
+| `./scripts/deploy.sh logs [servicio]` | Ver logs |
+| `./scripts/deploy.sh status` | Estado y recursos |
+| `./scripts/deploy.sh db-backup` | Respaldo de BD |
+| `./scripts/deploy.sh db-restore <file>` | Restaurar BD |
+
+## API Endpoints
+
+Base: `/api/v1/gestion-proyectos`
+
+| Recurso | Endpoints |
+|---------|-----------|
+| Auth | `POST /api/auth/login`, `GET /api/auth/me` |
+| Empresas | CRUD `/empresas` |
+| Colaboradores | CRUD `/colaboradores` |
+| Contratos | CRUD `/contratos` |
+| Equipos | CRUD `/equipos`, `POST /{id}/miembros` |
+| Tareas | CRUD `/tareas`, `/kanban/{equipoId}`, `/mis-tareas` |
+| Dashboard | `/dashboard/super`, `/dashboard/equipo`, `/dashboard/alertas-sla` |
+| Notificaciones | `/notificaciones`, `/notificaciones/no-leidas` |
+| BPM | `/bpm/tareas/{id}/estado`, `/bpm/tareas/{id}/claim` |
+
+## Licencia
+
+Propiedad de TECH2GO S.A. — Todos los derechos reservados.

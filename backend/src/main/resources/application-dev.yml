@@ -1,6 +1,31 @@
+# ═══════════════════════════════════════════════════════════
+# Perfil: DESARROLLO
+# ═══════════════════════════════════════════════════════════
 spring:
-  jpa.show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartgob_gproyectos
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
 logging:
   level:
-    ec.smartgob.gproyectos: DEBUG
+    root: INFO
+    ec.smartgob: DEBUG
+    org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
+    org.activiti: DEBUG
+
+app:
+  uploads:
+    path: ./uploads
+    max-size-mb: 10
+  sla:
+    dias-alerta: 3
+    horas-revision: 48
+  notificaciones:
+    dias-retener: 30
