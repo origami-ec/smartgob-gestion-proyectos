@@ -1,0 +1,6 @@
+spring:
+  jpa.show-sql: true
+logging:
+  level:
+    ec.smartgob.gproyectos: DEBUG
+    org.hibernate.SQL: DEBUG
